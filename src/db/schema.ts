@@ -1,0 +1,53 @@
+import {
+  integer,
+  numeric,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
+import { FREQUENCY_KEYS } from "../lib/budget";
+
+export const frequencyEnum = pgEnum("frequency", FREQUENCY_KEYS);
+
+// Accounts. Login is by password only (no email) — the password itself
+// identifies the person, so each account's password must be unique. `name` is
+// just a human label for managing/greeting the account, never typed at login.
+// Passwords are stored as a scrypt hash (see src/lib/password.ts), never
+// plaintext. Users are created out-of-band (npm run user:create); no signup.
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Recurring costs, owned by one user. Every query is scoped by userId so
+// accounts never see each other's data.
+export const expenses = pgTable("expenses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  frequency: frequencyEnum("frequency").notNull(),
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// One settings row per user, keyed by userId, holding the monthly take-home income.
+export const settings = pgTable("settings", {
+  userId: integer("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  monthlyIncome: numeric("monthly_income", { precision: 12, scale: 2 })
+    .notNull()
+    .default("0"),
+});
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Expense = typeof expenses.$inferSelect;
+export type NewExpense = typeof expenses.$inferInsert;

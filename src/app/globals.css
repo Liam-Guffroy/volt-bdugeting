@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/* Single accent color (teal) on a clean, near-neutral surface.
+   Tailwind v4 reads these tokens to generate bg-*, text-*, border-*, ring-* utilities. */
+@theme {
+  --color-background: #f6f7f9;
+  --color-foreground: #0f172a;
+
+  --color-card: #ffffff;
+  --color-border: #e6e8ec;
+
+  --color-muted: #f1f3f6;
+  --color-muted-foreground: #64748b;
+
+  --color-primary: #0d9488;
+  --color-primary-foreground: #ffffff;
+
+  --color-ring: #0d9488;
+
+  --color-positive: #0d9488;
+  --color-negative: #dc2626;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+}
+
+/* Dark theme: same tokens, re-pointed. Toggling the `dark` class on <html>
+   (see ThemeToggle + the no-flash script in layout.tsx) swaps every bg-*,
+   text-*, border-*, ring-* utility because they all read these variables. */
+.dark {
+  --color-background: #0b1220;
+  --color-foreground: #e6edf6;
+
+  --color-card: #121b2c;
+  --color-border: #243149;
+
+  --color-muted: #1b2638;
+  --color-muted-foreground: #94a3b8;
+
+  --color-primary: #14b8a6;
+  --color-primary-foreground: #04221f;
+
+  --color-ring: #14b8a6;
+
+  --color-positive: #2dd4bf;
+  --color-negative: #f87171;
+
+  color-scheme: dark;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
