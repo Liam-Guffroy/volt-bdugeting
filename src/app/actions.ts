@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { expenses, settings } from "@/db/schema";
@@ -32,6 +32,10 @@ const expenseSchema = z.object({
 
 const idSchema = z.object({
   id: z.coerce.number().int().positive(),
+});
+
+const moveSchema = idSchema.extend({
+  direction: z.enum(["up", "down"]),
 });
 
 function fail(parsed: z.SafeParseReturnType<unknown, unknown>): FormState {
@@ -126,6 +130,52 @@ export async function updateExpense(
 
   revalidatePath("/");
   return { ok: true };
+}
+
+/**
+ * Move one expense up or down in this user's list.
+ *
+ * Rather than swapping two position values, this renumbers the whole list
+ * 0..n-1 in its new order. Older rows can share a position (the column defaults
+ * to 0) or have gaps after deletes, and a plain swap misbehaves on ties — a
+ * renumber always lands in a consistent state. Only rows whose position
+ * actually changed are written.
+ */
+export async function moveExpense(formData: FormData): Promise<void> {
+  const userId = await requireUser();
+
+  const parsed = moveSchema.safeParse({
+    id: formData.get("id"),
+    direction: formData.get("direction"),
+  });
+  if (!parsed.success) return;
+
+  await db.transaction(async (tx) => {
+    const rows = await tx
+      .select({ id: expenses.id, position: expenses.position })
+      .from(expenses)
+      .where(eq(expenses.userId, userId))
+      .orderBy(asc(expenses.position), asc(expenses.id));
+
+    const from = rows.findIndex((r) => r.id === parsed.data.id);
+    if (from < 0) return; // not this user's row (or already gone)
+
+    const to = parsed.data.direction === "up" ? from - 1 : from + 1;
+    if (to < 0 || to >= rows.length) return; // already at the edge
+
+    [rows[from], rows[to]] = [rows[to], rows[from]];
+
+    // Sequential, not Promise.all: a transaction is one connection.
+    for (const [index, row] of rows.entries()) {
+      if (row.position === index) continue;
+      await tx
+        .update(expenses)
+        .set({ position: index })
+        .where(and(eq(expenses.id, row.id), eq(expenses.userId, userId)));
+    }
+  });
+
+  revalidatePath("/");
 }
 
 export async function deleteExpense(formData: FormData): Promise<void> {

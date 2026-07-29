@@ -1,13 +1,14 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { frequencyLabel, type NormalizedExpense } from "@/lib/budget";
 import { formatEUR } from "@/lib/format";
 import {
   deleteExpense,
+  moveExpense,
   updateExpense,
   type FormState,
 } from "./actions";
@@ -20,7 +21,44 @@ function toInput(amount: number): string {
   return String(amount).replace(".", ",");
 }
 
-export function ExpenseRow({ expense }: { expense: NormalizedExpense }) {
+/** One up/down arrow, submitting a move for this expense. */
+function MoveButton({
+  id,
+  direction,
+  disabled,
+}: {
+  id: number;
+  direction: "up" | "down";
+  disabled: boolean;
+}) {
+  const up = direction === "up";
+  return (
+    <form action={moveExpense}>
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="direction" value={direction} />
+      <Button
+        type="submit"
+        size="icon"
+        variant="ghost"
+        className="h-6 w-6"
+        disabled={disabled}
+        aria-label={up ? "Omhoog verplaatsen" : "Omlaag verplaatsen"}
+      >
+        {up ? <ChevronUp /> : <ChevronDown />}
+      </Button>
+    </form>
+  );
+}
+
+export function ExpenseRow({
+  expense,
+  isFirst,
+  isLast,
+}: {
+  expense: NormalizedExpense;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   const [editing, setEditing] = useState(false);
   const [state, formAction, pending] = useActionState(updateExpense, initial);
 
@@ -69,6 +107,11 @@ export function ExpenseRow({ expense }: { expense: NormalizedExpense }) {
 
   return (
     <li className="flex items-center gap-3 px-4 py-3">
+      <div className="flex flex-col gap-0.5">
+        <MoveButton id={expense.id} direction="up" disabled={isFirst} />
+        <MoveButton id={expense.id} direction="down" disabled={isLast} />
+      </div>
+
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">{expense.name}</p>
         <p className="text-sm text-muted-foreground">

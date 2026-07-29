@@ -78,8 +78,13 @@ export default async function PlannerPage() {
                 </p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {summary.all.map((e) => (
-                    <ExpenseRow key={e.id} expense={e} />
+                  {summary.all.map((e, i) => (
+                    <ExpenseRow
+                      key={e.id}
+                      expense={e}
+                      isFirst={i === 0}
+                      isLast={i === summary.all.length - 1}
+                    />
                   ))}
                 </ul>
               )}
