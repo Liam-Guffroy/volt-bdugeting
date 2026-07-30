@@ -119,7 +119,7 @@ src/
     income-form.tsx         # client form -> setIncome
     expense-form.tsx        # client form -> addExpense + quick-add presets
     expense-row.tsx         # client row: inline edit + reorder + delete
-    one-time-form.tsx       # client form -> addOneTimeExpense (for the viewed month)
+    one-time-form.tsx       # client form -> addOneTimeExpense + quick-add presets
     one-time-row.tsx        # one-off cost row + delete
     frequency-select.tsx    # native <select> sharing the Input look
     results-panel.tsx       # three totals + reserve breakdown
