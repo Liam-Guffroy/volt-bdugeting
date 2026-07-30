@@ -87,10 +87,24 @@ Pure functions in `src/lib/budget.ts`, no I/O:
 - **Regular** = weekly / biweekly / monthly (what you actually pay each month).
 - **Reserve** = anything less frequent than monthly, divided down to a monthly
   set-aside (a yearly €1.200 bill → €100/month).
-- `summarize(income, expenses)` returns `remaining` (income − regular − reserve),
-  `regularTotal`, `reserveTotal`, and a per-bill reserve breakdown.
+- **One-time** costs are filed against a single month (`YYYY-MM`) and are *not*
+  normalized — they hit only the month they belong to.
+- `summarize(income, expenses, oneTime)` returns `remaining`
+  (income − regular − reserve − oneTime), `regularTotal`, `reserveTotal`,
+  `oneTimeTotal`, and a per-bill reserve breakdown.
 
 Belgian euro formatting (`nl-BE`, "€ 1.234,56") lives in `src/lib/format.ts`.
+
+## Months
+
+The planner is scoped to a month via `?month=YYYY-MM` (defaults to the current
+one). Recurring costs are month-independent, so they show up in every month;
+one-time costs only appear in theirs. That makes browsing back through previous
+months a real overview rather than a snapshot.
+
+Month keys are plain strings and all arithmetic is integer math
+(`src/lib/month.ts`) — nothing can drift across a timezone boundary into the
+wrong month. An invalid or missing `?month=` falls back to the current month.
 
 ## Where things live
 
@@ -101,9 +115,12 @@ src/
     page.tsx                # planner: requireUser(), reads this user's data, composes UI
     actions.ts             # setIncome / addExpense / updateExpense / deleteExpense / logout (Zod, userId-scoped)
     theme-toggle.tsx        # client light/dark toggle
+    month-nav.tsx           # prev/next month links (?month=YYYY-MM)
     income-form.tsx         # client form -> setIncome
     expense-form.tsx        # client form -> addExpense + quick-add presets
-    expense-row.tsx         # client row: inline edit + delete
+    expense-row.tsx         # client row: inline edit + reorder + delete
+    one-time-form.tsx       # client form -> addOneTimeExpense (for the viewed month)
+    one-time-row.tsx        # one-off cost row + delete
     frequency-select.tsx    # native <select> sharing the Input look
     results-panel.tsx       # three totals + reserve breakdown
     login/
@@ -114,11 +131,12 @@ src/
     session.ts              # cookie sign/verify (carries userId), requireUser()
     password.ts             # scrypt hash/verify for stored account passwords
     budget.ts               # frequency config + pure normalization/summarize
+    month.ts                # "YYYY-MM" keys: parse, shift, format (nl-BE)
     format.ts               # nl-BE euro
     utils.ts                # cn()
   db/
     index.ts                # Drizzle client (node-postgres)
-    schema.ts               # users + expenses + per-user settings (income)
+    schema.ts               # users + expenses + one-time expenses + per-user settings
   components/ui/            # button, input, label, card
 scripts/
   create-user.mjs           # provision/reset an account (npm run user:create)

@@ -3,14 +3,21 @@ import { frequencyLabel, type BudgetSummary } from "@/lib/budget";
 import { formatEUR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export function ResultsPanel({ summary }: { summary: BudgetSummary }) {
+export function ResultsPanel({
+  summary,
+  monthLabel,
+}: {
+  summary: BudgetSummary;
+  monthLabel: string;
+}) {
   const negative = summary.remaining < 0;
+  const hasOneTime = summary.oneTimeTotal > 0;
 
   return (
     <div className="space-y-4">
-      {/* Headline: what's left each month */}
+      {/* Headline: what's left in the month being viewed */}
       <Card className="p-6">
-        <p className="text-sm text-muted-foreground">Over per maand</p>
+        <p className="text-sm text-muted-foreground">Over in {monthLabel}</p>
         <p
           className={cn(
             "mt-1 text-4xl font-semibold tabular-nums",
@@ -21,12 +28,20 @@ export function ResultsPanel({ summary }: { summary: BudgetSummary }) {
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
           inkomen − vaste kosten − reservering
+          {hasOneTime ? " − eenmalig" : ""}
         </p>
       </Card>
 
       <div className="grid grid-cols-2 gap-4">
         <Stat label="Vaste kosten / maand" value={formatEUR(summary.regularTotal)} />
         <Stat label="Reserveren / maand" value={formatEUR(summary.reserveTotal)} />
+        {hasOneTime ? (
+          <Stat
+            className="col-span-2"
+            label={`Eenmalig in ${monthLabel}`}
+            value={formatEUR(summary.oneTimeTotal)}
+          />
+        ) : null}
       </div>
 
       {/* Reserve breakdown — what to set aside, per irregular bill */}
@@ -73,9 +88,17 @@ export function ResultsPanel({ summary }: { summary: BudgetSummary }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
   return (
-    <Card className="p-4">
+    <Card className={cn("p-4", className)}>
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
     </Card>

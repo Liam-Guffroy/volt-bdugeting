@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { expenses, settings } from "@/db/schema";
+import { expenses, oneTimeExpenses, settings } from "@/db/schema";
 import { FREQUENCY_KEYS } from "@/lib/budget";
+import { isMonthKey } from "@/lib/month";
 import { endSession, requireUser } from "@/lib/session";
 
 export interface FormState {
@@ -36,6 +37,12 @@ const idSchema = z.object({
 
 const moveSchema = idSchema.extend({
   direction: z.enum(["up", "down"]),
+});
+
+const oneTimeSchema = z.object({
+  name: z.string().trim().min(1, "Vul een naam in.").max(120),
+  amount: amount.pipe(z.number().positive("Bedrag moet groter zijn dan nul.")),
+  month: z.string().refine(isMonthKey, "Ongeldige maand."),
 });
 
 function fail(parsed: z.SafeParseReturnType<unknown, unknown>): FormState {
@@ -187,6 +194,45 @@ export async function deleteExpense(formData: FormData): Promise<void> {
   await db
     .delete(expenses)
     .where(and(eq(expenses.id, id.data.id), eq(expenses.userId, userId)));
+  revalidatePath("/");
+}
+
+/** Add a one-off cost to a specific month. */
+export async function addOneTimeExpense(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const userId = await requireUser();
+
+  const parsed = oneTimeSchema.safeParse({
+    name: formData.get("name"),
+    amount: formData.get("amount"),
+    month: formData.get("month"),
+  });
+  if (!parsed.success) return fail(parsed);
+
+  await db.insert(oneTimeExpenses).values({
+    userId,
+    month: parsed.data.month,
+    name: parsed.data.name,
+    amount: parsed.data.amount.toFixed(2),
+  });
+
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteOneTimeExpense(formData: FormData): Promise<void> {
+  const userId = await requireUser();
+
+  const id = idSchema.safeParse({ id: formData.get("id") });
+  if (!id.success) return;
+
+  await db
+    .delete(oneTimeExpenses)
+    .where(
+      and(eq(oneTimeExpenses.id, id.data.id), eq(oneTimeExpenses.userId, userId)),
+    );
   revalidatePath("/");
 }
 

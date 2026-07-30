@@ -8,7 +8,10 @@
  *     yearly €1.200 bill becomes a €100/month set-aside so the money is there
  *     when it lands.
  *
- * remaining = income − regularTotal − reserveTotal
+ * One-time costs are not normalized at all — they hit the single month they're
+ * filed under, and only that month's figures.
+ *
+ * remaining = income − regularTotal − reserveTotal − oneTimeTotal
  */
 
 export type FrequencyGroup = "regular" | "reserve";
@@ -67,13 +70,24 @@ export interface NormalizedExpense extends BudgetExpense {
   monthly: number;
 }
 
+/** A one-off cost filed against a single month. */
+export interface OneTimeExpense {
+  id: number;
+  name: string;
+  amount: number;
+}
+
 export interface BudgetSummary {
   income: number;
   /** Sum of monthly equivalents for weekly/biweekly/monthly bills. */
   regularTotal: number;
   /** Sum of monthly set-asides for less-than-monthly bills. */
   reserveTotal: number;
-  /** income − regularTotal − reserveTotal (can be negative). */
+  /** Sum of the one-off costs in the month being viewed. */
+  oneTimeTotal: number;
+  /** The one-off costs themselves, in the order passed in. */
+  oneTime: OneTimeExpense[];
+  /** income − regularTotal − reserveTotal − oneTimeTotal (can be negative). */
   remaining: number;
   /** Per-bill breakdown of the regular bills. */
   regular: NormalizedExpense[];
@@ -90,6 +104,7 @@ export interface BudgetSummary {
 export function summarize(
   income: number,
   expenses: BudgetExpense[],
+  oneTime: OneTimeExpense[] = [],
 ): BudgetSummary {
   const normalized: NormalizedExpense[] = expenses.map((e) => ({
     ...e,
@@ -105,12 +120,15 @@ export function summarize(
 
   const regularTotal = sum(regular);
   const reserveTotal = sum(reserve);
+  const oneTimeTotal = oneTime.reduce((total, e) => total + e.amount, 0);
 
   return {
     income,
     regularTotal,
     reserveTotal,
-    remaining: income - regularTotal - reserveTotal,
+    oneTimeTotal,
+    oneTime,
+    remaining: income - regularTotal - reserveTotal - oneTimeTotal,
     regular,
     reserve,
     all: normalized,

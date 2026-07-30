@@ -37,6 +37,21 @@ export const expenses = pgTable("expenses", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// One-off costs filed against a specific month ("YYYY-MM"), e.g. a new washing
+// machine in March. Unlike `expenses` these don't recur, so they only affect
+// the month they're filed under — which is what makes browsing past months
+// meaningful.
+export const oneTimeExpenses = pgTable("one_time_expenses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  month: text("month").notNull(),
+  name: text("name").notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // One settings row per user, keyed by userId, holding the monthly take-home income.
 export const settings = pgTable("settings", {
   userId: integer("user_id")
@@ -51,3 +66,4 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Expense = typeof expenses.$inferSelect;
 export type NewExpense = typeof expenses.$inferInsert;
+export type OneTimeExpenseRow = typeof oneTimeExpenses.$inferSelect;
