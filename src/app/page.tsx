@@ -91,41 +91,10 @@ export default async function PlannerPage({
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
-        {/* Left: inputs */}
+        {/* Left: inputs, ordered by how often you touch them — one-off costs
+            (groceries, a repair) get typed in constantly, recurring costs now
+            and then, income basically once. */}
         <div className="space-y-8">
-          <section>
-            <Card className="p-6">
-              <IncomeForm defaultValue={incomeInput} />
-            </Card>
-          </section>
-
-          <section className="space-y-4">
-            <h2 className="font-medium">Terugkerende kosten</h2>
-
-            <Card className="p-6">
-              <ExpenseForm />
-            </Card>
-
-            <Card className="overflow-hidden">
-              {parsed.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-muted-foreground">
-                  Nog geen kosten toegevoegd.
-                </p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {summary.all.map((e, i) => (
-                    <ExpenseRow
-                      key={e.id}
-                      expense={e}
-                      isFirst={i === 0}
-                      isLast={i === summary.all.length - 1}
-                    />
-                  ))}
-                </ul>
-              )}
-            </Card>
-          </section>
-
           <section className="space-y-4">
             <div>
               <h2 className="font-medium">Eenmalige kosten</h2>
@@ -156,6 +125,39 @@ export default async function PlannerPage({
                   </li>
                 </ul>
               )}
+            </Card>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="font-medium">Terugkerende kosten</h2>
+
+            <Card className="p-6">
+              <ExpenseForm />
+            </Card>
+
+            <Card className="overflow-hidden">
+              {parsed.length === 0 ? (
+                <p className="px-4 py-6 text-sm text-muted-foreground">
+                  Nog geen kosten toegevoegd.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {summary.all.map((e, i) => (
+                    <ExpenseRow
+                      key={e.id}
+                      expense={e}
+                      isFirst={i === 0}
+                      isLast={i === summary.all.length - 1}
+                    />
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </section>
+
+          <section>
+            <Card className="p-6">
+              <IncomeForm defaultValue={incomeInput} />
             </Card>
           </section>
         </div>
